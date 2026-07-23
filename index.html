@@ -6,6 +6,7 @@
 <title>Film Beyni — Sihirli Film Asistanınız</title>
 
 <!-- ===== App icon & PWA ayarları (telefonda logo ile görünmesi için) ===== -->
+<link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
 <link rel="shortcut icon" href="favicon.ico">
@@ -21,13 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<!-- ================= STYLES ================= -->
+<!-- ================= STYLE (style.css) ================= -->
 <style>
-/* ==========================================================================
-   FILM BEYNİ — Design tokens
-   Palette: gece göğü lacivert/mor zemin, sıcak altın vurgu, sihirli menekşe glow
-   Type: Cinzel / Cinzel Decorative (başlık, "büyülü kitap" hissi) + Manrope (gövde)
-   ========================================================================== */
 :root{
   --ink-950:#0a0a16;
   --ink-900:#12102a;
@@ -213,11 +209,11 @@ h1,h2,h3{font-family:var(--font-display);letter-spacing:.02em;margin:0;}
 .mic-btn[disabled]{opacity:.35; cursor:not-allowed;}
 .setting-note{font-size:.72rem; color:var(--mist); margin:-6px 0 4px; line-height:1.5;}
 .disabled-toggle{opacity:.4; pointer-events:none;}
-.gemini-input{
-  background:var(--ink-800); border:1px solid var(--line); color:var(--paper);
-  border-radius:var(--radius-sm); padding:10px 12px; font-size:.82rem; width:100%; margin-top:8px;
+.credit-badge{
+  font-size:.72rem; background:rgba(242,193,78,0.12); border:1px solid var(--line); color:var(--gold-300);
+  padding:5px 10px; border-radius:999px; white-space:nowrap; font-weight:700;
 }
-.gemini-input:focus{outline:none; border-color:var(--violet-400);}
+.credit-badge.low{color:#d6437f; border-color:rgba(214,67,127,.4); background:rgba(214,67,127,0.1);}
 
 /* ---- grids / lists (genres & eras) ---- */
 .grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:16px; overflow-y:auto;}
@@ -398,6 +394,7 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
         <span class="dot-online"></span>
         Film Beyni
       </div>
+      <span class="credit-badge" id="creditBadge" title="Bugün kalan öneri hakkınız">🎫 20</span>
       <button class="icon-btn" id="settingsShortcut" aria-label="Ayarlar">⚙</button>
     </header>
 
@@ -478,6 +475,7 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
         <div class="stat"><span id="statSuggested">0</span><small>Önerilen Film</small></div>
         <div class="stat"><span id="statWatched">0</span><small>İşaretlenen Film</small></div>
         <div class="stat"><span id="statFav">0</span><small>Favori Film</small></div>
+        <div class="stat"><span id="statCredits">20</span><small>Bugünkü Hak</small></div>
       </div>
       <button class="ghost-btn" id="gotoSettings">⚙ Ayarlar</button>
     </div>
@@ -506,24 +504,6 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
       </div>
 
       <div class="setting-row column">
-        <label>🧠 Gemini ile Gerçek Yapay Zeka</label>
-        <div class="setting-row" style="padding:0;">
-          <span style="font-size:.8rem; color:var(--mist);">Serbest metinleri Gemini anlasın</span>
-          <div class="toggle" id="toggleGemini"><div class="knob"></div></div>
-        </div>
-        <input type="password" id="geminiKeyInput" placeholder="Gemini API anahtarınızı yapıştırın (AIza...)" class="gemini-input">
-        <button class="ghost-btn" id="saveGeminiBtn" style="margin-top:6px;">🔑 Anahtarı Kaydet</button>
-        <p class="setting-note">
-          Not: Google'ın Gemini uygulamasındaki özel "Gem"lerin dışarıya açık bir API'si yok, o yüzden
-          doğrudan sizin eğittiğiniz Gem'e bağlanamıyoruz. Bunun yerine, anahtarınızla gerçek Gemini
-          modeline sizin yazdığınız Film Beyni karakterini (persona) sistem talimatı olarak veriyoruz —
-          davranış olarak çok benzer olur. Anahtar sadece bu tarayıcıda saklanır ve isteği doğrudan
-          sizin tarayıcınızdan Google'a gönderir; bizim sunucumuzdan geçmez.
-        </p>
-        <p class="setting-note" id="geminiStatusNote"></p>
-      </div>
-
-      <div class="setting-row column">
         <label>Animasyon Kalitesi</label>
         <div class="seg" id="segAnim">
           <button data-val="low">Düşük</button>
@@ -545,12 +525,8 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
   </nav>
 </div>
 
-<!-- ================= SCRIPT ================= -->
+<!-- ================= SCRIPT (script.js) ================= -->
 <script>
-/* ==========================================================================
-   FILM BEYNİ — script.js
-   ========================================================================== */
-
 (function(){
   "use strict";
 
@@ -562,8 +538,7 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
     animQuality: "ultra",
     favorites: JSON.parse(localStorage.getItem("fb_favorites") || "[]"),
     seenTitles: JSON.parse(localStorage.getItem("fb_seen") || "[]"),
-    geminiKey: localStorage.getItem("fb_gemini_key") || "",
-    geminiEnabled: localStorage.getItem("fb_gemini_on") === "1",
+    credits: loadCredits(),
     suggestedCount: parseInt(localStorage.getItem("fb_suggested") || "0", 10),
     watchedCount: parseInt(localStorage.getItem("fb_watched") || "0", 10),
     pendingGenre: null,
@@ -576,6 +551,43 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
     localStorage.setItem("fb_suggested", String(state.suggestedCount));
     localStorage.setItem("fb_watched", String(state.watchedCount));
   };
+
+  /* ---------------- GÜNLÜK 20 HAK SİSTEMİ ---------------- */
+  function todayKey(){
+    const d = new Date();
+    return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+  }
+  function loadCredits(){
+    const stored = JSON.parse(localStorage.getItem("fb_credits") || "null");
+    if(!stored || stored.date !== todayKey()){
+      return { date: todayKey(), remaining: 20 };
+    }
+    return stored;
+  }
+  function saveCredits(){
+    localStorage.setItem("fb_credits", JSON.stringify(state.credits));
+    updateCreditBadge();
+  }
+  function updateCreditBadge(){
+    const badge = document.getElementById("creditBadge");
+    if(badge){
+      badge.textContent = `🎫 ${state.credits.remaining}`;
+      badge.classList.toggle("low", state.credits.remaining <= 5);
+    }
+    const statEl = document.getElementById("statCredits");
+    if(statEl) statEl.textContent = state.credits.remaining;
+  }
+  function hasCredit(){
+    if(state.credits.date !== todayKey()){
+      state.credits = { date: todayKey(), remaining: 20 };
+      saveCredits();
+    }
+    return state.credits.remaining > 0;
+  }
+  function spendCredit(){
+    state.credits.remaining = Math.max(0, state.credits.remaining - 1);
+    saveCredits();
+  }
 
   /* ---------------- DATA: GENRES & ERAS ---------------- */
   const GENRES = [
@@ -1018,7 +1030,7 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
     {t:"The Greatest Showman", y:2017, dir:"Michael Gracey", dk:105, imdb:7.5,
      genres:["diger","dram","tarihi"], eras:["e19"],
      syn:"Sıra dışı yeteneklere sahip insanları bir araya getirerek bir gösteri imparatorluğu kuran hayalperest bir adamın müzikal hikâyesi.",
-     guclu:["Enerjik müzikal sahneler","Farklılığı kucaklama teması","Görsel olarak gösterişli sahneleme"],
+     guclu:["Enerjik müzikal sahneler","Farklığı kucaklama teması","Görsel olarak gösterişli sahneleme"],
      farkli:["Gerçek hikâyeden önemli ölçüde uzaklaştığı biliniyor"]}
   ];
 
@@ -1085,7 +1097,7 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
     const wrap = document.createElement("div");
     wrap.className = "msg " + from;
     wrap.innerHTML = html + `<span class="time">${timeNow()}</span>`;
-    $("#chatScroll").appendChild(wrap);
+    document.getElementById("chatScroll").appendChild(wrap);
     if(withChips && withChips.length){
       const row = document.createElement("div");
       row.className = "chips-row";
@@ -1098,7 +1110,7 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
       });
       wrap.appendChild(row);
     }
-    $("#chatScroll").scrollTop = $("#chatScroll").scrollHeight;
+    document.getElementById("chatScroll").scrollTop = document.getElementById("chatScroll").scrollHeight;
     if(from === "genie" && !html.includes("conjuring")){
       speak(htmlToText(html));
     }
@@ -1109,15 +1121,20 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
     const t = document.createElement("div");
     t.className = "msg genie typing-dots";
     t.innerHTML = "<span></span><span></span><span></span>";
-    $("#chatScroll").appendChild(t);
-    $("#chatScroll").scrollTop = $("#chatScroll").scrollHeight;
+    document.getElementById("chatScroll").appendChild(t);
+    document.getElementById("chatScroll").scrollTop = document.getElementById("chatScroll").scrollHeight;
     setTimeout(() => { t.remove(); cb(); }, delay || 900);
   }
 
   function maybeJoke(){
     if(!state.jokes) return "";
+    if(Math.random() > 0.45) return "";
     const j = JOKES[Math.floor(Math.random()*JOKES.length)];
     return `<br><br><em>${j}</em>`;
+  }
+
+  function pick(arr){
+    return arr[Math.floor(Math.random()*arr.length)];
   }
 
   /* ---------------- POSTER ---------------- */
@@ -1171,8 +1188,8 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
   }
 
   function renderResults(title, list){
-    $("#resultsTitle").textContent = title;
-    const box = $("#resultsList");
+    document.getElementById("resultsTitle").textContent = title;
+    const box = document.getElementById("resultsList");
     box.innerHTML = "";
     list.forEach(m => {
       const card = document.createElement("div");
@@ -1199,7 +1216,7 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
     currentDetail = m;
     const g = GENRE_COLORS[m.genres[0]] || ["#302a4a","#7c5cff"];
     const genreLabels = m.genres.map(id => GENRES.find(x=>x.id===id)?.label).filter(Boolean).join(", ");
-    $("#detailBody").innerHTML = `
+    document.getElementById("detailBody").innerHTML = `
       <div class="detail-hero" style="background:linear-gradient(155deg, ${g[0]}, ${g[1]})">
         <h2>${m.t}</h2>
       </div>
@@ -1228,7 +1245,7 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
         <button class="watch-btn" id="watchBtn">🔎 Ücretsiz &amp; Yasal İzleme Seçeneklerini Google'da Bul</button>
         <p class="watch-note">Film Beyni canlı internet erişimine sahip olmadığı için sabit bir link vermek yerine, güncel ve doğrulanmış sonuçlar için sizi doğrudan bir Google aramasına yönlendirir.</p>
       </div>`;
-    $("#watchBtn").onclick = () => {
+    document.getElementById("watchBtn").onclick = () => {
       const q = encodeURIComponent(`${m.t} ${m.y} ücretsiz yasal izle site:tubitv.com OR site:pluto.tv OR site:archive.org`);
       window.open(`https://www.google.com/search?q=${q}`, "_blank", "noopener");
       state.watchedCount += 1; save(); renderStats();
@@ -1239,11 +1256,12 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
 
   function updateFavBtn(){
     const on = currentDetail && state.favorites.some(f => f.t === currentDetail.t);
-    $("#detailFavBtn").textContent = on ? "♥" : "♡";
-    $("#detailFavBtn").style.color = on ? "#d6437f" : "";
+    const btn = document.getElementById("detailFavBtn");
+    btn.textContent = on ? "♥" : "♡";
+    btn.style.color = on ? "#d6437f" : "";
   }
 
-  $("#detailFavBtn").addEventListener("click", () => {
+  document.getElementById("detailFavBtn").addEventListener("click", () => {
     if(!currentDetail) return;
     const idx = state.favorites.findIndex(f => f.t === currentDetail.t);
     if(idx >= 0) state.favorites.splice(idx,1);
@@ -1253,9 +1271,9 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
 
   /* ---------------- FAVORITES VIEW ---------------- */
   function renderFavorites(){
-    const grid = $("#favGrid");
+    const grid = document.getElementById("favGrid");
     grid.innerHTML = "";
-    $("#favEmpty").style.display = state.favorites.length ? "none" : "block";
+    document.getElementById("favEmpty").style.display = state.favorites.length ? "none" : "block";
     state.favorites.forEach(m => {
       const item = document.createElement("div");
       item.className = "fav-item";
@@ -1270,14 +1288,15 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
 
   /* ---------------- PROFILE STATS ---------------- */
   function renderStats(){
-    $("#statSuggested").textContent = state.suggestedCount;
-    $("#statWatched").textContent = state.watchedCount;
-    $("#statFav").textContent = state.favorites.length;
+    document.getElementById("statSuggested").textContent = state.suggestedCount;
+    document.getElementById("statWatched").textContent = state.watchedCount;
+    document.getElementById("statFav").textContent = state.favorites.length;
+    updateCreditBadge();
   }
 
   /* ---------------- GENRE / ERA GRIDS ---------------- */
   function buildGenreGrid(){
-    const grid = $("#genreGrid");
+    const grid = document.getElementById("genreGrid");
     grid.innerHTML = "";
     GENRES.forEach(g => {
       const card = document.createElement("div");
@@ -1293,7 +1312,7 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
   }
 
   function buildEraList(){
-    const list = $("#eraList");
+    const list = document.getElementById("eraList");
     list.innerHTML = "";
     ERAS.forEach(e => {
       const row = document.createElement("div");
@@ -1313,22 +1332,55 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
     setTimeout(() => { holder.remove(); cb(); }, state.animQuality === "low" ? 300 : 1200);
   }
 
+  const INTRO_LINES = [
+    (l)=>`Anlaşıldı Efendim! <strong>${l}</strong> için sihrimi hazırlıyorum. 🧞‍♂️`,
+    (l)=>`<strong>${l}</strong> mi? Nefis bir seçim, hemen bakıyorum. ✨`,
+    (l)=>`Lambamı ovuyorum… <strong>${l}</strong> için 20 film geliyor! 🪔`,
+    (l)=>`Harika bir zevk Efendim! <strong>${l}</strong> üzerine düşünüyorum. 🌟`
+  ];
+  const RESULT_LINES = [
+    ()=>`İşte 20 özenle seçilmiş film! 📽️`,
+    ()=>`Buyurun, tam 20 film hazır! 🎬`,
+    ()=>`20 öneri kapıda Efendim! ✨`,
+    ()=>`Sihir tamamlandı, 20 film önünüzde! 🔮`
+  ];
+
   function runRecommendationFlow(genreId, eraId, genreLabel, eraLabel){
     const label = [genreLabel, eraLabel].filter(Boolean).join(" · ") || "Karma";
-    addMsg(`Anlaşıldı Efendim! <strong>${label}</strong> için yüksek kaliteli, ilham verici 20 film hazırlıyorum. 🧞‍♂️`, "genie");
+    if(!hasCredit()){
+      addMsg(`Bugünkü 20 hakkınızı kullandınız Efendim! Yarın tekrar dolu bir lamba ile buradayım. ✨`, "genie");
+      return;
+    }
+    spendCredit();
+    addMsg(pick(INTRO_LINES)(label), "genie");
     conjure(() => {
       const list = recommend(genreId, eraId, 20);
-      addMsg(`İşte sizin için özenle seçilmiş 20 film! Hepsi kaliteli ve ilham verici. 📽️${maybeJoke()}`, "genie");
+      addMsg(`${pick(RESULT_LINES)()}${maybeJoke()}`, "genie");
       renderResults(label, list);
     });
   }
 
   /* ---------------- FREE TEXT INPUT ---------------- */
   const GENRE_KEYWORDS = {
-    fantastik:["fantastik","büyü","masal"], bilimkurgu:["bilim kurgu","uzay","robot","gelecek"],
-    aksiyon:["aksiyon","kovalamaca","aksiyonlu"], dram:["dram","duygusal"], komedi:["komedi","güldür","komik"],
-    gerilim:["gerilim","gerginlik"], animasyon:["animasyon","çizgi film"], belgesel:["belgesel"],
-    romantik:["romantik","aşk"], tarihi:["tarih","tarihi"], diger:["diğer"]
+    fantastik:["fantastik","büyü","büyülü","masal","ejderha","sihir"],
+    bilimkurgu:["bilim kurgu","bilimkurgu","uzay","robot","gelecek","uzaylı","yapay zeka"],
+    aksiyon:["aksiyon","kovalamaca","aksiyonlu","dövüş","patlama","macera"],
+    dram:["dram","duygusal","içli","ağlatan","hayat hikayesi"],
+    komedi:["komedi","güldür","komik","eğlenceli","gülmek"],
+    gerilim:["gerilim","gerginlik","gizem","polisiye","dedektif","esrarengiz"],
+    animasyon:["animasyon","çizgi film","pixar","disney"],
+    belgesel:["belgesel","doğa","gerçek hikaye"],
+    romantik:["romantik","aşk","aşık","sevgili"],
+    tarihi:["tarih","tarihi","savaş filmi","dönem filmi"],
+    diger:["diğer","müzikal","şarkılı"]
+  };
+  const ERA_KEYWORDS = {
+    e15:["15. yüzyıl","onbeşinci yüzyıl"], e16:["16. yüzyıl"], e17:["17. yüzyıl"],
+    e18:["18. yüzyıl"], e19:["19. yüzyıl","viktorya"],
+    e20:["20. yüzyıl","1980","1990","1970","1960","2. dünya savaşı","ikinci dünya savaşı"],
+    e21:["21. yüzyıl","günümüz","modern","şimdiki zaman"],
+    gelecek:["gelecek","fütüristik","distopya"],
+    belirsiz:["belirsiz","ortaçağ","efsanevi","masalsı zaman"]
   };
 
   function guessGenre(text){
@@ -1338,81 +1390,45 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
     }
     return null;
   }
-
-  /* ---------------- GEMINI INTEGRATION ---------------- */
-  const GEMINI_PERSONA = `Sen "Film Beyni" adlı, efendisine "Efendim" diye hitap eden, aşırı zeki ve dahi, kibar, centilmen bir cin/yapay zeka film asistanısın. Küfür, argo veya uygunsuz hiçbir ifade kullanmazsın. Kısa, esprili ve sıcak bir üslubun var. Sadece Türkçe konuşursun. Görevin: kullanıcının serbest metnini analiz edip hangi film türünü istediğini anlamak.`;
-
-  async function askGemini(userText){
-    if(!state.geminiEnabled || !state.geminiKey) return null;
-    const instruction = `${GEMINI_PERSONA}\n\nKullanıcı mesajı: "${userText}"\n\nSADECE şu JSON formatında, başka hiçbir açıklama/markdown olmadan cevap ver:\n{"genre": "<fantastik|bilimkurgu|aksiyon|dram|komedi|gerilim|animasyon|belgesel|romantik|tarihi|diger|none>", "reply": "<Efendim'e söyleyeceğin, kısa (max 2 cümle), sıcak ve esprili tek bir Türkçe yanıt>"}`;
-    const body = {
-      contents: [{ role: "user", parts: [{ text: instruction }] }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 220 }
-    };
-    try{
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(state.geminiKey)}`,
-        { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
-      );
-      if(!res.ok){
-        const errText = await res.text().catch(()=> "");
-        throw new Error(`HTTP ${res.status} ${errText.slice(0,120)}`);
-      }
-      const data = await res.json();
-      const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      const cleaned = raw.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(cleaned);
-      $("#geminiStatusNote").textContent = "";
-      return parsed;
-    }catch(e){
-      $("#geminiStatusNote").textContent = `Gemini isteği başarısız oldu (${e.message}). Yerel anlayışa geçiliyor.`;
-      return null;
+  function guessEra(text){
+    text = text.toLowerCase();
+    for(const [id, kws] of Object.entries(ERA_KEYWORDS)){
+      if(kws.some(k => text.includes(k))) return id;
     }
+    return null;
   }
 
-  async function handleUserText(text){
+  function handleUserText(text){
     addMsg(text, "user");
-
-    if(state.geminiEnabled && state.geminiKey){
-      const holder = addMsg(`<div class="conjuring"><div class="mini-lamp">🧠</div>Gemini ile düşünüyorum…</div>`, "genie");
-      const result = await askGemini(text);
-      holder.remove();
-      if(result){
-        const genreId = (result.genre && result.genre !== "none") ? result.genre : null;
-        const genreLabel = genreId ? GENRES.find(g=>g.id===genreId)?.label : null;
-        addMsg(result.reply || "Anlaşıldı Efendim!", "genie");
-        if(genreId){
-          runRecommendationFlow(genreId, null, genreLabel, null);
-        } else {
-          addMsg(`Size en uygun 20 filmi seçebilmem için biraz daha ipucu verir misiniz? 😊`, "genie", [
-            {label:"🎬 Film Türleri", onClick:() => { showView("view-genres"); }},
-            {label:"⏳ Dönem Seçimi", onClick:() => { showView("view-eras"); }},
-            {label:"✨ Rastgele Öner", onClick:() => randomFlow()}
-          ]);
-        }
-        return;
-      }
-    }
-
     const genreGuess = guessGenre(text);
+    const eraGuess = guessEra(text);
     showTyping(() => {
-      if(genreGuess){
-        runRecommendationFlow(genreGuess, null, GENRES.find(g=>g.id===genreGuess).label, null);
+      if(genreGuess || eraGuess){
+        runRecommendationFlow(
+          genreGuess, eraGuess,
+          genreGuess ? GENRES.find(g=>g.id===genreGuess).label : null,
+          eraGuess ? ERAS.find(e=>e.id===eraGuess).label : null
+        );
       } else {
-        addMsg(`Yüksek kaliteli, ilham verici 20 film önerisi hazırlayabilmem için biraz daha fikrinizi almak isterim Efendim! 😊${maybeJoke()}`, "genie", [
+        addMsg(`Bir tür ya da dönem söylerseniz hemen 20 film hazırlarım Efendim. 😊`, "genie", [
           {label:"🎬 Film Türleri", onClick:() => { showView("view-genres"); }},
           {label:"⏳ Dönem Seçimi", onClick:() => { showView("view-eras"); }},
           {label:"✨ Rastgele Öner", onClick:() => randomFlow()}
         ]);
       }
-    }, 700);
+    }, 600);
   }
 
   function randomFlow(){
+    if(!hasCredit()){
+      addMsg(`Bugünkü 20 hakkınızı kullandınız Efendim! Yarın tekrar dolu bir lamba ile buradayım. ✨`, "genie");
+      return;
+    }
+    spendCredit();
     addMsg("Rastgele sihir yapıyorum! 🔮", "genie");
     conjure(() => {
       const list = recommend(null, null, 20);
-      addMsg(`İşte fal taşı gibi açık, karma bir liste! 🎲${maybeJoke()}`, "genie");
+      addMsg(`İşte fal taşı gibi açık, karma 20 film! 🎲${maybeJoke()}`, "genie");
       renderResults("Rastgele Öneriler", list);
     });
   }
@@ -1428,16 +1444,16 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
   }
 
   /* ---------------- EVENTS ---------------- */
-  $("#composerForm").addEventListener("submit", (e) => {
+  document.getElementById("composerForm").addEventListener("submit", (e) => {
     e.preventDefault();
-    const input = $("#composerInput");
+    const input = document.getElementById("composerInput");
     const val = input.value.trim();
     if(!val) return;
     input.value = "";
     handleUserText(val);
   });
 
-  $$(".quick-chip").forEach(chip => {
+  document.querySelectorAll(".quick-chip").forEach(chip => {
     chip.addEventListener("click", () => {
       const action = chip.dataset.action;
       if(action === "genres") showView("view-genres");
@@ -1446,9 +1462,9 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
     });
   });
 
-  /* ---------------- MICROPHONE ---------------- */
+  /* ---------------- MİKROFON ---------------- */
   const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const micBtn = $("#micBtn");
+  const micBtn = document.getElementById("micBtn");
   let recognition = null;
   if(SpeechRecognitionCtor){
     recognition = new SpeechRecognitionCtor();
@@ -1472,86 +1488,72 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
     });
   } else {
     micBtn.disabled = true;
-    micBtn.title = "Bu tarayıcı sesli komutu desteklemiyor";
+    micBtn.title = "Bu tarayıcı sesli komutu desteklemiyor (Chrome/Android önerilir)";
   }
 
-  $$(".back-btn").forEach(btn => {
+  document.querySelectorAll(".back-btn").forEach(btn => {
     btn.addEventListener("click", () => showView(btn.dataset.back));
   });
 
-  $$(".nav-item").forEach(item => {
+  document.querySelectorAll(".nav-item").forEach(item => {
     item.addEventListener("click", () => {
       showView(item.dataset.nav);
-      if(item.dataset.focusComposer) setTimeout(() => $("#composerInput").focus(), 200);
+      if(item.dataset.focusComposer) setTimeout(() => document.getElementById("composerInput").focus(), 200);
       if(item.dataset.nav === "view-favorites") renderFavorites();
       if(item.dataset.nav === "view-profile") renderStats();
     });
   });
 
-  $("#menuBtn").addEventListener("click", () => { showView("view-profile"); renderStats(); });
-  $("#settingsShortcut").addEventListener("click", () => showView("view-settings"));
-  $("#gotoSettings").addEventListener("click", () => showView("view-settings"));
+  document.getElementById("menuBtn").addEventListener("click", () => { showView("view-profile"); renderStats(); });
+  document.getElementById("settingsShortcut").addEventListener("click", () => showView("view-settings"));
+  document.getElementById("gotoSettings").addEventListener("click", () => showView("view-settings"));
 
   /* ---------------- SETTINGS ---------------- */
   if(!("speechSynthesis" in window)){
     state.voice = false;
-    $("#toggleVoice").classList.remove("on");
-    $("#toggleVoice").classList.add("disabled-toggle");
-    $("#voiceSupportNote").textContent = "Bu tarayıcı sesli okumayı desteklemiyor.";
+    document.getElementById("toggleVoice").classList.remove("on");
+    document.getElementById("toggleVoice").classList.add("disabled-toggle");
+    document.getElementById("voiceSupportNote").textContent = "Bu tarayıcı sesli okumayı desteklemiyor.";
   }
-  $("#toggleVoice").addEventListener("click", function(){
+  document.getElementById("toggleVoice").addEventListener("click", function(){
     if(!("speechSynthesis" in window)) return;
     state.voice = !state.voice;
     this.classList.toggle("on", state.voice);
     if(state.voice) speak("Cin sesi açık Efendim.");
     else window.speechSynthesis.cancel();
   });
-  $("#testVoiceBtn").addEventListener("click", function(){
+  document.getElementById("testVoiceBtn").addEventListener("click", function(){
     unlockAudio();
-    if(!("speechSynthesis" in window)) return;
+    if(!("speechSynthesis" in window)){
+      document.getElementById("voiceSupportNote").textContent = "Bu tarayıcı sesli okumayı hiç desteklemiyor.";
+      return;
+    }
     if(!state.voice){
       state.voice = true;
-      $("#toggleVoice").classList.add("on");
+      document.getElementById("toggleVoice").classList.add("on");
     }
+    const voiceCount = window.speechSynthesis.getVoices().length;
     speak("Merhaba Efendim, ben Film Beyni! Sesimi duyabiliyor musunuz?", (err) => {
-      $("#voiceSupportNote").textContent = `Ses çalınamadı (${err}).`;
+      document.getElementById("voiceSupportNote").textContent = `Ses çalınamadı (${err}).`;
     });
+    if(voiceCount === 0){
+      document.getElementById("voiceSupportNote").textContent = "Cihazınızda henüz yüklü bir okuma sesi bulunamadı — birkaç saniye sonra tekrar deneyin.";
+    } else {
+      document.getElementById("voiceSupportNote").textContent = "";
+    }
   });
-  $("#toggleJokes").addEventListener("click", function(){
+  document.getElementById("toggleJokes").addEventListener("click", function(){
     state.jokes = !state.jokes;
     this.classList.toggle("on", state.jokes);
   });
-  $("#toggleNotif").addEventListener("click", function(){
+  document.getElementById("toggleNotif").addEventListener("click", function(){
     state.notif = !state.notif;
     this.classList.toggle("on", state.notif);
   });
 
-  /* ---------------- GEMINI SETTINGS UI ---------------- */
-  $("#geminiKeyInput").value = state.geminiKey;
-  $("#toggleGemini").classList.toggle("on", state.geminiEnabled);
-  if(state.geminiEnabled && !state.geminiKey){
-    $("#geminiStatusNote").textContent = "Açık, ama henüz bir API anahtarı girmediniz.";
-  }
-  $("#toggleGemini").addEventListener("click", function(){
-    state.geminiEnabled = !state.geminiEnabled;
-    this.classList.toggle("on", state.geminiEnabled);
-    localStorage.setItem("fb_gemini_on", state.geminiEnabled ? "1" : "0");
-    if(state.geminiEnabled && !state.geminiKey){
-      $("#geminiStatusNote").textContent = "Açık, ama henüz bir API anahtarı girmediniz.";
-    } else {
-      $("#geminiStatusNote").textContent = state.geminiEnabled ? "Gemini aktif." : "";
-    }
-  });
-  $("#saveGeminiBtn").addEventListener("click", function(){
-    const val = $("#geminiKeyInput").value.trim();
-    state.geminiKey = val;
-    localStorage.setItem("fb_gemini_key", val);
-    $("#geminiStatusNote").textContent = val ? "Anahtar kaydedildi. ✅" : "Anahtar temizlendi.";
-  });
-
-  $$("#segAnim button").forEach(btn => {
+  document.querySelectorAll("#segAnim button").forEach(btn => {
     btn.addEventListener("click", function(){
-      $$("#segAnim button").forEach(b=>b.classList.remove("active"));
+      document.querySelectorAll("#segAnim button").forEach(b=>b.classList.remove("active"));
       this.classList.add("active");
       state.animQuality = this.dataset.val;
       document.body.classList.toggle("anim-low", state.animQuality === "low");
@@ -1560,14 +1562,14 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
 
   /* ---------------- SPLASH -> APP ---------------- */
   function goToApp(){
-    $("#splash").classList.add("leaving");
+    document.getElementById("splash").classList.add("leaving");
     setTimeout(() => {
-      $("#splash").classList.remove("active");
-      $("#app").classList.add("visible");
+      document.getElementById("splash").classList.remove("active");
+      document.getElementById("app").classList.add("visible");
       initialGreeting();
     }, 550);
   }
-  $("#splash").addEventListener("click", goToApp);
+  document.getElementById("splash").addEventListener("click", goToApp);
   setTimeout(goToApp, 2600);
 
   /* ---------------- BOOT ---------------- */
@@ -1575,8 +1577,18 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--gold-400); out
   buildEraList();
   renderStats();
   renderFavorites();
+  updateCreditBadge();
+  localStorage.removeItem("fb_gemini_key");
+  localStorage.removeItem("fb_gemini_on");
+
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
 
 })();
 </script>
 </body>
 </html>
+
