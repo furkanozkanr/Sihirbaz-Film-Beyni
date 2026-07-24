@@ -1,31 +1,195 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Film Beyni</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-950 text-slate-100 h-screen flex flex-col justify-center items-center p-4">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Film Beyni — Sihirli Film Asistanınız</title>
 
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md text-center shadow-xl">
-        <div class="text-4xl mb-3">🧞‍♂️</div>
-        <h1 class="text-xl font-bold mb-1 text-indigo-400">Film Beyni</h1>
-        <p class="text-slate-400 text-xs mb-4">Sihirli lambayı ovuştur, fikrini yaz.</p>
-        
-        <input type="text" id="userInput" placeholder="Fikrini yaz..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:border-indigo-500">
-        <button onclick="lambayiOvustur()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-lg text-sm transition">Lambayı Ovuştur 🚀</button>
+<!-- ===== App icon & PWA ayarları (telefonda logo ile görünmesi için) ===== -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="shortcut icon" href="favicon.ico">
+<!-- iOS ana ekrana ekleme için gerekli -->
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Film Beyni">
+<!-- Android/Chrome adres çubuğu ve görev yöneticisi rengi -->
+<meta name="theme-color" content="#0a0a16">
+<meta name="mobile-web-app-capable" content="yes">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ================= SPLASH ================= -->
+<section id="splash" class="screen splash active">
+  <div class="stars"></div>
+  <div class="splash-moon"></div>
+  <div class="splash-content">
+    <div class="lamp-wrap" id="splashLamp">
+      <div class="smoke-cloud" id="smokeCloud"></div>
+      <svg class="lamp-svg" viewBox="0 0 200 120" aria-hidden="true">
+        <ellipse cx="100" cy="108" rx="70" ry="8" class="lamp-shadow"/>
+        <path d="M40 92 Q45 60 90 55 L90 45 Q90 35 100 35 Q110 35 110 45 L110 55 Q150 58 158 82 Q160 92 148 96 L48 96 Q38 96 40 92 Z" class="lamp-body"/>
+        <path d="M148 88 Q175 82 182 68" class="lamp-spout"/>
+        <circle cx="182" cy="66" r="4" class="lamp-tip"/>
+        <rect x="93" y="30" width="14" height="10" rx="2" class="lamp-lid"/>
+        <ellipse cx="100" cy="30" rx="9" ry="4" class="lamp-lid-top"/>
+      </svg>
+    </div>
+    <h1 class="splash-title">Hoş Geldiniz</h1>
+    <p class="splash-sub">→ Efendim ←</p>
+    <h2 class="brand">Film Beyni</h2>
+    <p class="brand-tag">✦ Yapay Zeka ile Güçlendirilmiş ✦</p>
+  </div>
+</section>
+
+<!-- ================= APP SHELL ================= -->
+<div id="app" class="app">
+
+  <!-- ---- CHAT / HOME VIEW ---- -->
+  <section id="view-chat" class="view active">
+    <header class="topbar">
+      <button class="icon-btn" id="menuBtn" aria-label="Menü">☰</button>
+      <div class="topbar-title">
+        <span class="dot-online"></span>
+        Film Beyni
+      </div>
+      <span class="credit-badge" id="creditBadge" title="Bugün kalan öneri hakkınız">🎫 20</span>
+      <button class="icon-btn" id="settingsShortcut" aria-label="Ayarlar">⚙</button>
+    </header>
+
+    <div class="chat-scroll" id="chatScroll"></div>
+
+    <div class="quick-actions" id="quickActions">
+      <button class="quick-chip" data-action="genres">🎬 Film Türleri</button>
+      <button class="quick-chip" data-action="eras">⏳ Dönem Seçimi</button>
+      <button class="quick-chip" data-action="random">✨ Rastgele Öner</button>
     </div>
 
-    <script>
-        function lambayiOvustur() {
-            const val = document.getElementById('userInput').value;
-            if(val) {
-                alert("Sihirli lamba harekete geçti: " + val);
-            } else {
-                alert("Lütfen önce bir fikir yazın efendim!");
-            }
-        }
-    </script>
+    <form class="composer" id="composerForm">
+      <input type="text" id="composerInput" placeholder="Bir film, tür veya dönem yazın…" autocomplete="off">
+      <button type="button" class="mic-btn" id="micBtn" aria-label="Sesli komut">
+        <svg viewBox="0 0 24 24" class="mic-icon" aria-hidden="true">
+          <path d="M12 15.2a3.4 3.4 0 0 0 3.4-3.4V6.4a3.4 3.4 0 0 0-6.8 0v5.4a3.4 3.4 0 0 0 3.4 3.4Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M6.2 11a5.8 5.8 0 0 0 11.6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M12 16.8v3.1M9.3 19.9h5.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button type="submit" class="send-btn" aria-label="Gönder">➤</button>
+    </form>
+  </section>
+
+  <!-- ---- GENRE PICKER VIEW ---- -->
+  <section id="view-genres" class="view">
+    <header class="subbar">
+      <button class="icon-btn back-btn" data-back="view-chat">←</button>
+      <h2>Film Türleri</h2>
+    </header>
+    <div class="grid grid-genres" id="genreGrid"></div>
+  </section>
+
+  <!-- ---- ERA PICKER VIEW ---- -->
+  <section id="view-eras" class="view">
+    <header class="subbar">
+      <button class="icon-btn back-btn" data-back="view-chat">←</button>
+      <h2>Dönem Seçimi</h2>
+    </header>
+    <div class="list list-eras" id="eraList"></div>
+  </section>
+
+  <!-- ---- RESULTS VIEW ---- -->
+  <section id="view-results" class="view">
+    <header class="subbar">
+      <button class="icon-btn back-btn" data-back="view-chat">←</button>
+      <h2 id="resultsTitle">Öneriler</h2>
+    </header>
+    <div class="results-list" id="resultsList"></div>
+  </section>
+
+  <!-- ---- DETAIL VIEW ---- -->
+  <section id="view-detail" class="view">
+    <header class="subbar">
+      <button class="icon-btn back-btn" data-back="view-results">←</button>
+      <button class="icon-btn fav-toggle" id="detailFavBtn">♡</button>
+    </header>
+    <div class="detail-body" id="detailBody"></div>
+  </section>
+
+  <!-- ---- FAVORITES VIEW ---- -->
+  <section id="view-favorites" class="view">
+    <header class="subbar">
+      <h2>Favori Filmlerim</h2>
+    </header>
+    <div class="fav-grid" id="favGrid"></div>
+    <p class="empty-note" id="favEmpty">Henüz favori filminiz yok. Bir film bulun ve ♡ ile kaydedin. 🧞</p>
+  </section>
+
+  <!-- ---- PROFILE VIEW ---- -->
+  <section id="view-profile" class="view">
+    <header class="subbar"><h2>Profilim</h2></header>
+    <div class="profile-body">
+      <div class="profile-avatar">🧞</div>
+      <h3 class="profile-name">Efendim</h3>
+      <p class="profile-tag">Film Beyni ile harika vakitler!</p>
+      <div class="profile-stats">
+        <div class="stat"><span id="statSuggested">0</span><small>Önerilen Film</small></div>
+        <div class="stat"><span id="statWatched">0</span><small>İşaretlenen Film</small></div>
+        <div class="stat"><span id="statFav">0</span><small>Favori Film</small></div>
+        <div class="stat"><span id="statCredits">20</span><small>Bugünkü Hak</small></div>
+      </div>
+      <button class="ghost-btn" id="gotoSettings">⚙ Ayarlar</button>
+    </div>
+  </section>
+
+  <!-- ---- SETTINGS VIEW ---- -->
+  <section id="view-settings" class="view">
+    <header class="subbar">
+      <button class="icon-btn back-btn" data-back="view-chat">←</button>
+      <h2>Ayarlar</h2>
+    </header>
+    <div class="settings-body">
+      <div class="setting-row">
+        <label>Cin Sesi (Sesli Okuma)</label>
+        <div class="toggle on" id="toggleVoice"><div class="knob"></div></div>
+      </div>
+      <p class="setting-note" id="voiceSupportNote"></p>
+      <button class="ghost-btn" id="testVoiceBtn" style="margin-bottom:16px;">🔊 Sesi Test Et</button>
+      <div class="setting-row">
+        <label>Esprili Yanıtlar</label>
+        <div class="toggle on" id="toggleJokes"><div class="knob"></div></div>
+      </div>
+      <div class="setting-row">
+        <label>Bildirimler</label>
+        <div class="toggle on" id="toggleNotif"><div class="knob"></div></div>
+      </div>
+
+      <div class="setting-row column">
+        <label>Animasyon Kalitesi</label>
+        <div class="seg" id="segAnim">
+          <button data-val="low">Düşük</button>
+          <button data-val="mid">Orta</button>
+          <button class="active" data-val="ultra">Ultra</button>
+        </div>
+      </div>
+      <p class="settings-footer">Sihir her zaman sizinle olsun! ✦</p>
+    </div>
+  </section>
+
+  <!-- ---- BOTTOM NAV ---- -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="nav-item active" data-nav="view-chat"><span>🏠</span>Ana Sayfa</button>
+    <button class="nav-item" data-nav="view-genres"><span>🧭</span>Keşfet</button>
+    <button class="nav-item" data-nav="view-favorites"><span>♡</span>Favoriler</button>
+    <button class="nav-item" data-nav="view-chat" data-focus-composer="1"><span>🧞</span>Film Beyni</button>
+    <button class="nav-item" data-nav="view-profile"><span>◎</span>Profil</button>
+  </nav>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
