@@ -1,7 +1,7 @@
 {
   "name": "Film Beyni",
   "short_name": "FilmBeyni",
-  "start_url": "/",
+  "start_url": "/proje-adi/", 
   "display": "standalone",
   "background_color": "#0a0a16",
   "theme_color": "#0a0a16",
