@@ -20,7 +20,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -182,11 +182,26 @@
 
   <!-- ---- BOTTOM NAV ---- -->
   <nav class="bottom-nav" id="bottomNav">
-    <button class="nav-item active" data-nav="view-chat"><span>🏠</span>Ana Sayfa</button>
-    <button class="nav-item" data-nav="view-genres"><span>🧭</span>Keşfet</button>
-    <button class="nav-item" data-nav="view-favorites"><span>♡</span>Favoriler</button>
-    <button class="nav-item" data-nav="view-chat" data-focus-composer="1"><span>🧞</span>Film Beyni</button>
-    <button class="nav-item" data-nav="view-profile"><span>◎</span>Profil</button>
+    <button class="nav-item active" data-nav="view-chat">
+      <svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 10v9h12v-9" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/><path d="M10 19v-5h4v5" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/></svg>
+      Ana Sayfa
+    </button>
+    <button class="nav-item" data-nav="view-genres">
+      <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.3" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M15 9l-2 4.5-4.5 2 2-4.5z" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linejoin="round"/></svg>
+      Keşfet
+    </button>
+    <button class="nav-item" data-nav="view-favorites">
+      <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 20s-7.2-4.6-9.6-9C.7 7.7 2.6 4 6.3 4 8.7 4 10.7 5.4 12 7.3 13.3 5.4 15.3 4 17.7 4c3.7 0 5.6 3.7 3.9 7-2.4 4.4-9.6 9-9.6 9Z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/></svg>
+      Favoriler
+    </button>
+    <button class="nav-item" data-nav="view-chat" data-focus-composer="1">
+      <svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 12.5c0-4.5 3.6-7.2 8-7.2s8 2.7 8 7.2c0 1-.2 1.9-.6 2.7l.9 3.3-3.5-1c-1.4.7-3 1-4.8 1-4.4 0-8-2.7-8-6Z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/><circle cx="9.3" cy="12.3" r="1" fill="currentColor"/><circle cx="12.5" cy="12.3" r="1" fill="currentColor"/><circle cx="15.7" cy="12.3" r="1" fill="currentColor"/></svg>
+      Film Beyni
+    </button>
+    <button class="nav-item" data-nav="view-profile">
+      <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="8.3" r="3.3" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M4.8 19.5c1.2-3.3 4-5 7.2-5s6 1.7 7.2 5" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/></svg>
+      Profil
+    </button>
   </nav>
 </div>
 
