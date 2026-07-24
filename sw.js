@@ -1,10 +1,11 @@
-// Film Beyni — minimal service worker
-// Amaç: Android/Chrome'un "Ana ekrana ekle" davranışını ve app ikonunu
-// düzgün göstermesi için PWA kurulabilirlik şartını sağlamak.
-// Karmaşık bir önbellekleme stratejisi kurmuyoruz; sadece dosyaları
-// çevrimdışı da açılabilsin diye temel bir cache-first yaklaşımı sunuyoruz.
+// Film Beyni — servis çalışanı
+// ÖNEMLİ: Önceki sürüm "cache-first" çalışıyordu — yani siz dosyaları
+// güncelleseniz bile telefon hep eski, önbelleklenmiş kopyayı gösteriyordu.
+// Şimdi "network-first" stratejisine geçiyoruz: her zaman önce internetten
+// en güncel dosyayı çekmeye çalışır, sadece çevrimdışıysanız (internet
+// yoksa) önbellekteki son bilinen kopyayı gösterir.
 
-const CACHE_NAME = "filmbeyni-v1";
+const CACHE_NAME = "filmbeyni-v2"; // sürüm değişti -> eski önbellek tamamen temizlenecek
 const ASSETS = [
   "./",
   "./index.html",
@@ -32,7 +33,15 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  if(event.request.method !== "GET") return;
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(event.request)
+      .then((networkResponse) => {
+        // İnternetten başarıyla geldi -> önbelleği bu en güncel kopyayla tazele
+        const copy = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(() => {});
+        return networkResponse;
+      })
+      .catch(() => caches.match(event.request)) // sadece çevrimdışıyken önbelleğe düş
   );
 });
